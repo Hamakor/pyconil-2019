@@ -2,4 +2,4 @@
 
 Instructions, setup tools and CI for PyCon Israel 2019 web site
 
-* [instructions](https://github.com/goodes/pretalx/wiki) for setting up a vm from scratch .
+List of other doc pages is available on the [wiki](https://github.com/Hamakor/pyconil-2019/wiki).
