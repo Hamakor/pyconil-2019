@@ -17,8 +17,69 @@ spec:
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
       containers:
-        - name: {{ .Chart.Name }}
+        - name: {{ .Chart.Name }}-nginx
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          command: ["/usr/sbin/nginx"]
+          securityContext:
+            runAsUser: 0
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          #livenessProbe:
+          #  httpGet:
+          #    path: /
+          #    port: http
+          #readinessProbe:
+          #  httpGet:
+          #    path: /
+          #    port: http
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          volumeMounts:
+            - name: shared-data
+              mountPath: /tmp
+            - name: data-volume
+              mountPath: /data
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+        - name: {{ .Chart.Name }}-webworker
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          command: ["pretalx"]
+          args: ["webworker"]
+          env:
+            - name: PRETALX_DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "pretalx.fullname" . }}
+                  key: pretalx-db-pass
+            - name: PRETALX_MAIL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "pretalx.fullname" . }}
+                  key: pretalx-mail-password
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "call-nested" (list . "redis" "redis.secretName") }}
+                  key: redis-password
+            - name: PRETALX_CELERY_BACKEND
+              value: redis://:$(REDIS_PASSWORD)@{{ include "call-nested" (list . "redis" "redis.fullname") }}-master/1
+            - name: PRETALX_CELERY_BROKER
+              value: redis://:$(REDIS_PASSWORD)@{{ include "call-nested" (list . "redis" "redis.fullname") }}-master/2
+            - name: PRETALX_REDIS
+              value: redis://:$(REDIS_PASSWORD)@{{ include "call-nested" (list . "redis" "redis.fullname") }}-master/0
+          volumeMounts:
+            - name: shared-data
+              mountPath: /tmp
+            - name: config-volume
+              mountPath: /etc/pretalx
+            - name: data-volume
+              mountPath: /data
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+        - name: {{ .Chart.Name }}-taskworker
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          command: ["pretalx"]
+          args: ["taskworker"]
           env:
             - name: PRETALX_DB_PASS
               valueFrom:
@@ -47,21 +108,9 @@ spec:
             - name: data-volume
               mountPath: /data
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          ports:
-            - name: http
-              containerPort: 80
-              protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: /
-              port: http
-          readinessProbe:
-            httpGet:
-              path: /
-              port: http
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
       volumes:
+        - name: shared-data
+          emptyDir: {}
         - name: config-volume
           configMap:
             name: {{ include "pretalx.fullname" . }}
