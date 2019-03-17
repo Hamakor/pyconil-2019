@@ -6,7 +6,7 @@ replicaCount: 1
 
 image:
   repository: amitar/pretalx
-  tag: latest
+  tag: pycon-il-0.1.1
   pullPolicy: IfNotPresent
 
 nameOverride: ""
