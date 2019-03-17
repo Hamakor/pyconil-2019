@@ -15,7 +15,8 @@ TODO: fill in stuff (copy style from other charts?)
 To install the chart with the release name `my-release`:
 
 ```bash
-$ helm install --name my-release pretalx_chart_path
+$ helm repo add pyconil https://s3-eu-west-1.amazonaws.com/pyconil-data-amit/charts
+$ helm install --name my-release pyconil/pretalx
 ```
 TODO: fill in more details
 
@@ -46,7 +47,7 @@ Specify each parameter using the `--set key=value[,key=value]` argument to `helm
 ```bash
 $ helm install --name my-release \
   --set var2=value1,var2=value2 \
-    pretalx_chart_path
+    pyconil/pretalx
 ```
 
 TODO: explain
